@@ -1,0 +1,72 @@
+Assignment1
+
+1.Differences file-wise:(kubia-rc.yaml vs kubia-replicaset.yaml)
+
+Replica Set and Replication Controller do almost the same thing.There are multiple ways your container can crash.
+The functionality of both Replica Controller and Replica Set is quiet the same – they are responsible to make sure that X number of pods with label that is equal to there label selector will be scheduled to different nodes on the cluster.
+The difference is that ReplicaSet has a generalized label selector which uses Set-Based selectors while replication controllers use Equity-Based selectors.
+Also change in apiVersion and kind.
+
+
+2.Run the kubia-replicaset.yaml .
+[root@ip-172-31-20-194 05-services]# kubectl create -f kubia-replicaset.yaml
+
+
+3.Identify what commands can be run after "kubectl apply...."
+kubectl apply -f kubia-replicaset.yaml
+
+
+4.Make a service over these pods (kubia-replicaset) and see if the service picks up the web-service within the pod ("You have hit....." message)
+
+[root@ip-172-31-20-194 05-services]# vi kubia-svc.yaml
+[root@ip-172-31-20-194 05-services]# kubectl apply -f kubia-svc.yaml
+service/kube2 created
+[root@ip-172-31-20-194 05-services]# kubectl get svc
+NAME             TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+kube2            ClusterIP   10.99.10.90   <none>        80/TCP         11s
+kubernetes       ClusterIP   10.96.0.1     <none>        443/TCP        3d8h
+kubia-nodeport   NodePort    10.107.2.86   <none>        80:30123/TCP   3d8h
+kubia2           ClusterIP   10.99.10.99   <none>        80/TCP         26h
+
+[root@ip-172-31-20-194 05-services]# kubectl get pods -o wide
+NAME                                               READY   STATUS      RESTARTS   AGE     IP               NODE                                               NOMINATED NODE   READINESS GATES
+batch-job-every-fifteen-minutes-1652731200-69ddq   0/1     Completed   0          35m     192.168.195.63   ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+batch-job-every-fifteen-minutes-1652732100-nxp6r   0/1     Completed   0          20m     192.168.195.4    ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+batch-job-every-fifteen-minutes-1652733000-lb7s5   0/1     Completed   0          5m27s   192.168.195.5    ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+kubia-8l2ck                                        1/1     Running     0          25h     192.168.195.28   ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+kubia-8rsjt                                        1/1     Running     0          25h     192.168.195.27   ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+kubia-xghf8                                        1/1     Running     0          25h     192.168.195.26   ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+[root@ip-172-31-20-194 05-services]# curl 10.99.10.90:80
+You've hit kubia-8rsjt
+[root@ip-172-31-20-194 05-services]# curl 10.99.10.90:80
+You've hit kubia-xghf8
+
+
+
+5.Negative Testing : change the labels of the pod and see if the service is still applied on those pods.
+
+[root@ip-172-31-20-194 03-Pods]# kubectl label pods kubia-xghf8 app=sql --overwrite
+pod/kubia-xghf8 labeled
+
+[root@ip-172-31-20-194 03-Pods]# kubectl get po -o wide
+NAME                                               READY   STATUS      RESTARTS   AGE    IP               NODE                                               NOMINATED NODE   READINESS GATES
+batch-job-every-fifteen-minutes-1652732100-nxp6r   0/1     Completed   0          35m    192.168.195.4    ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+batch-job-every-fifteen-minutes-1652733000-lb7s5   0/1     Completed   0          20m    192.168.195.5    ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+batch-job-every-fifteen-minutes-1652733900-6nzxg   0/1     Completed   0          5m5s   192.168.195.3    ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+kubia-8l2ck                                        1/1     Running     0          25h    192.168.195.28   ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+kubia-8rsjt                                        1/1     Running     0          25h    192.168.195.27   ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+kubia-pk6s7                                        1/1     Running     0          49s    192.168.195.10   ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+kubia-xghf8                                        1/1     Running     0          25h    192.168.195.26   ip-172-31-20-194.ap-southeast-1.compute.internal   <none>           <none>
+[root@ip-172-31-20-194 03-Pods]# curl 10.99.10.90:80
+You've hit kubia-pk6s7
+[root@ip-172-31-20-194 03-Pods]# curl 10.99.10.90:80
+You've hit kubia-8rsjt
+[root@ip-172-31-20-194 03-Pods]# curl 10.99.10.90:80
+You've hit kubia-8rsjt
+[root@ip-172-31-20-194 03-Pods]# curl 10.99.10.90:80
+You've hit kubia-pk6s7
+[root@ip-172-31-20-194 03-Pods]# curl 192.168.195.27:8080
+You've hit kubia-8rsjt
+[root@ip-172-31-20-194 03-Pods]# curl 192.168.195.10:8080
+You've hit kubia-pk6s7
+[root@ip-172-31-20-194 03-Pods]#
