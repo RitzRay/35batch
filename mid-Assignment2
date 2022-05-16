@@ -1,0 +1,44 @@
+1. Go to cronjob.yaml (/root/kubernetes-training/04-controllers)
+2. Open the file and change the 1st line to (apiVersion: batch/v1beta1).
+3. Run this file
+4. Find out what is the command to "get" the running jobs.
+Observe and if possible, paste the results from your practicals.
+
+Solution:
+
+vi cronjob.yaml
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: batch-job-every-fifteen-minutes
+spec:
+  schedule: "0,15,30,45 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: periodic-batch-job
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: main
+            image: luksa/batch-job
+            
+            
+[root@ip-172-31-20-194 04-controllers]# kubectl create -f cronjob.yaml
+cronjob.batch/batch-job-every-fifteen-minutes created
+[root@ip-172-31-20-194 04-controllers]# kubectl get cronjob
+NAME                              SCHEDULE             SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+batch-job-every-fifteen-minutes   0,15,30,45 * * * *   False     0        <none>          7s
+[root@ip-172-31-20-194 04-controllers]#
+
+
+6.Also identify how you would "permanently arrest" the jobs from running.
+
+
+
+7.What is the change from normal Jobs (jobs v/s cronJobs) - Your observation in one sentence.
+A Job creates one or more Pods and ensures that a specified number of them successfully terminate whereas CronJobs are useful for creating periodic and recurring tasks, like running backups or sending emails.
+            
