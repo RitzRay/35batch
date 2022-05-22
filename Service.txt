@@ -10,7 +10,7 @@ We need to update pod's metadata so it will match selector from service spec:
 
     metadata:
        name: kubectl-test
-       app: kubectl-test-189010
+       app: kubectl-test-12345
 Also the service accept connections on port 8000 and then forward it to port 8000 (targetPort) on pod. But pod listen on port 8080 (containerPort). 
 So one of them should be changed to match another - targetPort or containerPort.
 
