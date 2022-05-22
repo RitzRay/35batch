@@ -1,0 +1,12 @@
+Suppose you have deployed your application using a deployment controller. Assume the initial number of replicas is one. 
+Write the steps needed to update a container's image using deployment, making sure that there is zero downtime.
+
+Steps:
+
+We can configure the pod with a grace period (for example 30 seconds or more, depending on container startup time and image size) 
+and set "imagePullPolicy: "Always" and use kubectl delete pod pod_name. A new container will be created and the latest image automatically downloaded, 
+then the old container terminated.
+
+kubectl set image deployment/my-deployment mycontainer=<image-name>
+
+It will actually be triggering the rolling-update and that ensures we have the zero downtime.
