@@ -1,0 +1,233 @@
+1. go to root (cd /root/ ) . (both Master and Worker can perform this in their instances)
+
+
+[ec2-user@ip-172-31-20-194 ~]$ sudo su -
+Last login: Tue May 17 05:24:11 UTC 2022 on pts/0
+[root@ip-172-31-20-194 ~]# cd /root
+
+
+2. git clone https://github.com/omrKalyan/example-voting-app
+
+                                                                             
+[root@ip-172-31-20-194 ~]# git clone https://github.com/omrKalyan/example-voting                                                                             -app
+Cloning into 'example-voting-app'...
+remote: Enumerating objects: 494, done.
+remote: Total 494 (delta 0), reused 0 (delta 0), pack-reused 494
+Receiving objects: 100% (494/494), 236.47 KiB | 13.91 MiB/s, done.
+Resolving deltas: 100% (178/178), done.
+
+
+3. go to /root/example-voting-app/k8s-specifications
+
+[root@ip-172-31-20-194 ~]# cd /root/example-voting-app/k8s-specifications/
+[root@ip-172-31-20-194 k8s-specifications]# ll
+total 36
+-rw-r--r-- 1 root root 476 May 21 14:34 db-deployment.yaml
+-rw-r--r-- 1 root root 146 May 21 14:34 db-service.yaml
+-rw-r--r-- 1 root root 402 May 21 14:34 redis-deployment.yaml
+-rw-r--r-- 1 root root 152 May 21 14:34 redis-service.yaml
+-rw-r--r-- 1 root root 299 May 21 14:34 result-deployment.yaml
+-rw-r--r-- 1 root root 195 May 21 14:34 result-service.yaml
+-rw-r--r-- 1 root root 289 May 21 14:34 vote-deployment.yaml
+-rw-r--r-- 1 root root 192 May 21 14:34 vote-service.yaml
+-rw-r--r-- 1 root root 292 May 21 14:34 worker-deployment.yaml
+[root@ip-172-31-20-194 k8s-specifications]#
+[root@ip-172-31-20-194 k8s-specifications]# cat vote-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: vote
+spec:
+  type: NodePort
+  ports:
+  - name: "vote-service"
+    port: 5000
+    targetPort: 80
+    nodePort: 31000
+  selector:
+    app: vote
+
+[root@ip-172-31-20-194 k8s-specifications]# cat result-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: result
+spec:
+  type: NodePort
+  ports:
+  - name: "result-service"
+    port: 5001
+    targetPort: 80
+    nodePort: 31001
+  selector:
+    app: result
+
+
+4. [root@ip-172-31-7-102 k8s-specifications]# kubectl apply -f .
+
+
+[root@ip-172-31-20-194 k8s-specifications]# kubectl apply -f .
+deployment.apps/db created
+service/db created
+deployment.apps/redis created
+service/redis created
+deployment.apps/result created
+service/result created
+deployment.apps/vote created
+service/vote created
+deployment.apps/worker created
+[root@ip-172-31-20-194 k8s-specifications]#
+
+
+
+[root@ip-172-31-20-194 k8s-specifications]# kubectl get all
+NAME                          READY   STATUS    RESTARTS   AGE
+pod/db-57b8b86bcf-nt84c       1/1     Running   0          4m7s
+pod/mongodb                   1/1     Running   0          4d
+pod/redis-868d64d78-8ccs8     1/1     Running   0          4m7s
+pod/result-5d57b59f4b-hszjn   1/1     Running   0          4m6s
+pod/vote-94849dc97-njcbb      1/1     Running   0          4m6s
+pod/worker-dd46d7584-shlrh    1/1     Running   0          4m6s
+
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+service/db           ClusterIP   10.111.90.164    <none>        5432/TCP         4m7s
+service/kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP          4d
+service/redis        ClusterIP   10.103.69.128    <none>        6379/TCP         4m7s
+service/result       NodePort    10.105.219.101   <none>        5001:31001/TCP   4m6s
+service/vote         NodePort    10.97.120.193    <none>        5000:31000/TCP   4m6s
+
+NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/db       1/1     1            1           4m7s
+deployment.apps/redis    1/1     1            1           4m7s
+deployment.apps/result   1/1     1            1           4m6s
+deployment.apps/vote     1/1     1            1           4m6s
+deployment.apps/worker   1/1     1            1           4m6s
+
+NAME                                DESIRED   CURRENT   READY   AGE
+replicaset.apps/db-57b8b86bcf       1         1         1       4m7s
+replicaset.apps/redis-868d64d78     1         1         1       4m7s
+replicaset.apps/result-5d57b59f4b   1         1         1       4m6s
+replicaset.apps/vote-94849dc97      1         1         1       4m6s
+replicaset.apps/worker-dd46d7584    1         1         1       4m6s
+[root@ip-172-31-20-194 k8s-specifications]#
+
+
+
+5. for voting and result pods, Observe that NodePort is assigned.
+
+8[root@ip-172-31-20-194 k8s-specifications]# cat vote-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: vote
+spec:
+  type: NodePort
+  ports:
+  - name: "vote-service"
+    port: 5000
+    targetPort: 80
+    nodePort: 31000
+  selector:
+    app: vote
+
+[root@ip-172-31-20-194 k8s-specifications]# cat result-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: result
+spec:
+  type: NodePort
+  ports:
+  - name: "result-service"
+    port: 5001
+    targetPort: 80
+    nodePort: 31001
+  selector:
+    app: result
+
+
+6. Take your publicIP (your instance IP) : NodePort ► open 2 browsers , one for VOTING and one for Results.(Image Attached)
+7. Try voting and see the results paralelly in results page.(Attached)
+
+8. Now try to delete the Pods one by one (first voting Pod, then worker pod, then db pod) and see what happens to the voting and result app after deleting.
+
+Observation:
+
+
+a. Deleting the Voting POD:
+
+[root@ip-172-31-20-194 ~]# kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+db-57b8b86bcf-nt84c       1/1     Running   0          6h34m
+mongodb                   1/1     Running   0          4d6h
+redis-868d64d78-8ccs8     1/1     Running   0          6h34m
+result-5d57b59f4b-hszjn   1/1     Running   23         6h33m
+vote-94849dc97-njcbb      1/1     Running   0          6h33m
+worker-dd46d7584-shlrh    1/1     Running   0          6h33m
+[root@ip-172-31-20-194 ~]# kubectl delete pod vote-94849dc97-njcbb
+pod "vote-94849dc97-njcbb" deleted
+
+[root@ip-172-31-20-194 ~]# kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+db-57b8b86bcf-nt84c       1/1     Running   0          6h34m
+mongodb                   1/1     Running   0          4d6h
+redis-868d64d78-8ccs8     1/1     Running   0          6h34m
+result-5d57b59f4b-hszjn   1/1     Running   23         6h34m
+vote-94849dc97-gkvxz      1/1     Running   0          18s
+worker-dd46d7584-shlrh    1/1     Running   0          6h34m
+[root@ip-172-31-20-194 ~]#
+
+What we observed here after deleting a Voting POD that after we terminate a POD then also it will create a new one and terminate the old one due to replica(1) defined.
+
+
+b. Deleting the worker POD:
+
+[root@ip-172-31-20-194 ~]# kubectl delete pod worker-dd46d7584-shlrh
+pod "worker-dd46d7584-shlrh" deleted
+[root@ip-172-31-20-194 ~]# kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+db-57b8b86bcf-nt84c       1/1     Running   0          6h38m
+mongodb                   1/1     Running   0          4d6h
+redis-868d64d78-8ccs8     1/1     Running   0          6h38m
+result-5d57b59f4b-hszjn   1/1     Running   23         6h38m
+vote-94849dc97-gkvxz      1/1     Running   0          3m51s
+worker-dd46d7584-58l7w    1/1     Running   0          57s
+[root@ip-172-31-20-194 ~]#
+
+Here also we see no disruption as it has replicas(1) so after deleting also it spawned one POD.
+
+
+c. Deleting DB POD:
+
+
+[root@ip-172-31-20-194 ~]# kubectl delete pod db-57b8b86bcf-nt84c
+pod "db-57b8b86bcf-nt84c" deleted
+[root@ip-172-31-20-194 ~]# kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+db-57b8b86bcf-cglvk       1/1     Running   0          28s
+mongodb                   1/1     Running   0          4d6h
+redis-868d64d78-8ccs8     1/1     Running   0          6h40m
+result-5d57b59f4b-hszjn   1/1     Running   23         6h40m
+vote-94849dc97-gkvxz      1/1     Running   0          6m8s
+worker-dd46d7584-58l7w    1/1     Running   1          3m14s
+[root@ip-172-31-20-194 ~]#
+
+
+
+
+There is difference happened after deleting the DB pod and that made RESTART happened in worker side as mentioned above in RESTARTS column from kubectl get pods command and container has restarted in the worker side.
+Also we see the DATA is not been captured in the Result.
+
+
+when we check the logs of result Pod we observe the error as This socket has been ended by other Party(DB). (Snap Attached)
+DB must be having the DATA but the Result is not able to fetch data from DB and says it has ended by other party(DB).
+
+
+WHY result app STOPPED working after db pod stop.
+->There must be the reason that connection with DB is established but the socket has not been fit properly onto the new DB. It is problem from Result app only.
+->Log says that Result app is connected to db(new DB) but it says DB is not responding. But socket specifies hardcoded value and somehow this socket tries to identify the previous DB(which got deleted and so does its DATA).
+
+HOW YOU MADE THE RESULT POD work.
+
+We need to be resilient and delete the POD and it will start a new one.
+We have to establish proper connection and proper care of DATA and data has to be persistent. We need to use Persistent Volume mounted to make the data stored after also pods got deleted.
